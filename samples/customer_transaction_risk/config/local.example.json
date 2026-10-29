@@ -1,0 +1,9 @@
+{
+  "server": "localhost",
+  "database": "SsisAdfCustomerDemo",
+  "authentication": "windows",
+  "business_date": "2026-01-14",
+  "ssis_output_schema": "ssisout",
+  "adf_output_schema": "adfout",
+  "connection_string": "Data Source=localhost;Initial Catalog=SsisAdfCustomerDemo;Provider=MSOLEDBSQL.1;Integrated Security=SSPI;TrustServerCertificate=True;"
+}

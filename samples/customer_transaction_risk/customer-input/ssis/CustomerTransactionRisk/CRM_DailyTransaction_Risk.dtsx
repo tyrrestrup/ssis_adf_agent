@@ -1,0 +1,1005 @@
+<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" DTS:refId="Package" DTS:CreationDate="1/15/2026 9:00:00 AM" DTS:CreationName="Microsoft.Package" DTS:CreatorComputerName="CUSTOMER-SSISDEV" DTS:CreatorName="CUSTOMER\ssis.developer" DTS:Description="Enriches daily customer transactions with country risk, classifies risk, routes missing reference data to an exception path, and builds customer summaries." DTS:DTSID="{55B5A923-7DAA-5F43-920A-DCE68E750BD5}" DTS:ExecutableType="Microsoft.Package" DTS:LastModifiedProductVersion="16.0.1000.6" DTS:LocaleID="1033" DTS:ObjectName="CRM_DailyTransaction_Risk" DTS:PackageType="5" DTS:ProtectionLevel="0" DTS:VersionBuild="12" DTS:VersionGUID="{AEEC7E2A-E192-5FF0-8C9B-70387397D73A}">
+  <DTS:Property DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager DTS:refId="Package.ConnectionManagers[CustomerRiskDb]" DTS:CreationName="OLEDB" DTS:Description="Local SQL Server customer-risk demo database" DTS:DTSID="{BDF8F4C7-D051-573A-A03A-ADB431FC8C5A}" DTS:ObjectName="CustomerRiskDb">
+      <DTS:PropertyExpression DTS:Name="ConnectionString">@[$Project::DemoDbConnStr]</DTS:PropertyExpression>
+      <DTS:ObjectData>
+        <DTS:ConnectionManager DTS:ConnectionString="Data Source=localhost;Initial Catalog=SsisAdfCustomerDemo;Provider=MSOLEDBSQL.1;Integrated Security=SSPI;Application Name=SSIS-CRM_DailyTransaction_Risk-CustomerRiskDb;Auto Translate=False;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:PackageParameters>
+    <DTS:PackageParameter DTS:CreationName="" DTS:DataType="16" DTS:Description="Business date processed by the package" DTS:DTSID="{7B0666DE-47DB-57AC-9781-A40777B4BEBA}" DTS:ObjectName="BusinessDate" DTS:Required="True">
+      <DTS:Property DTS:DataType="16" DTS:Name="ParameterValue">2026-01-14T00:00:00</DTS:Property>
+    </DTS:PackageParameter>
+  </DTS:PackageParameters>
+  <DTS:Variables>
+    <DTS:Variable DTS:CreationName="" DTS:Description="Audit batch identifier" DTS:DTSID="{92A916B2-5A7B-5688-9185-4EF1FB2B5578}" DTS:IncludeInDebugDump="2345" DTS:Namespace="User" DTS:ObjectName="BatchId">
+      <DTS:VariableValue DTS:DataType="20">0</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable DTS:CreationName="" DTS:DTSID="{3C1EA1E9-0AAC-56BE-8D36-A9950AB5C80B}" DTS:IncludeInDebugDump="2345" DTS:Namespace="User" DTS:ObjectName="RowsExtracted">
+      <DTS:VariableValue DTS:DataType="3">0</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable DTS:CreationName="" DTS:DTSID="{0F466231-00FA-532C-BB40-FFD465823B41}" DTS:IncludeInDebugDump="2345" DTS:Namespace="User" DTS:ObjectName="RowsLoaded">
+      <DTS:VariableValue DTS:DataType="3">0</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable DTS:CreationName="" DTS:DTSID="{FA5D9EA3-C72A-5118-8BC7-3176E55F3157}" DTS:IncludeInDebugDump="2345" DTS:Namespace="User" DTS:ObjectName="RowsRejected">
+      <DTS:VariableValue DTS:DataType="3">0</DTS:VariableValue>
+    </DTS:Variable>
+  </DTS:Variables>
+  <DTS:Executables>
+    <DTS:Executable DTS:refId="Package\SQL Start Batch" DTS:CreationName="Microsoft.ExecuteSQLTask" DTS:Description="Create an auditable package run" DTS:DTSID="{2D27BB47-3109-50AD-8244-A7B2EEC46B19}" DTS:ExecutableType="Microsoft.ExecuteSQLTask" DTS:LocaleID="-1" DTS:ObjectName="SQL Start Batch" DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2019; © 2019 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1" DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData SQLTask:Connection="{BDF8F4C7-D051-573A-A03A-ADB431FC8C5A}" SQLTask:SqlStatementSource="EXEC audit.usp_StartPackageRun @PackageName = ?, @BusinessDate = ?, @ExecutionId = ?, @BatchId = ? OUTPUT;">
+          <SQLTask:ParameterBinding SQLTask:ParameterName="0" SQLTask:DtsVariableName="System::PackageName" SQLTask:ParameterDirection="Input" SQLTask:DataType="130" SQLTask:ParameterSize="-1" />
+          <SQLTask:ParameterBinding SQLTask:ParameterName="1" SQLTask:DtsVariableName="$Package::BusinessDate" SQLTask:ParameterDirection="Input" SQLTask:DataType="7" SQLTask:ParameterSize="-1" />
+          <SQLTask:ParameterBinding SQLTask:ParameterName="2" SQLTask:DtsVariableName="System::ServerExecutionID" SQLTask:ParameterDirection="Input" SQLTask:DataType="20" SQLTask:ParameterSize="-1" />
+          <SQLTask:ParameterBinding SQLTask:ParameterName="3" SQLTask:DtsVariableName="User::BatchId" SQLTask:ParameterDirection="Output" SQLTask:DataType="20" SQLTask:ParameterSize="-1" />
+        </SQLTask:SqlTaskData>
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable DTS:refId="Package\SQL Clear Business Date" DTS:CreationName="Microsoft.ExecuteSQLTask" DTS:Description="Make the fixed-date demo safe to rerun" DTS:DTSID="{2EC9641A-C568-5179-A58B-AA60E6F00B5F}" DTS:ExecutableType="Microsoft.ExecuteSQLTask" DTS:LocaleID="-1" DTS:ObjectName="SQL Clear Business Date" DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2019; © 2019 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1" DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData SQLTask:Connection="{BDF8F4C7-D051-573A-A03A-ADB431FC8C5A}" SQLTask:SqlStatementSource="EXEC audit.usp_ResetPackageOutputs @BusinessDate = ?;">
+          <SQLTask:ParameterBinding SQLTask:ParameterName="0" SQLTask:DtsVariableName="$Package::BusinessDate" SQLTask:ParameterDirection="Input" SQLTask:DataType="7" SQLTask:ParameterSize="-1" />
+        </SQLTask:SqlTaskData>
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable DTS:refId="Package\DFT Enrich and Classify Transactions" DTS:CreationName="Microsoft.Pipeline" DTS:Description="Extract daily transactions, enrich country risk, classify, route exceptions, and aggregate customer totals" DTS:DTSID="{D83CA0B2-2F55-5935-AD9B-3B340358A24E}" DTS:ExecutableType="Microsoft.Pipeline" DTS:LocaleID="-1" DTS:ObjectName="DFT Enrich and Classify Transactions" DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1" DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <pipeline version="1">
+          <components>
+            <component refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions" componentClassID="Microsoft.OLEDBSource" description="OLE DB Source" name="OLE SRC Daily Transactions" version="7" usesDispositions="true">
+              <properties>
+                <property dataType="System.Int32" name="CommandTimeout">0</property>
+                <property dataType="System.String" name="OpenRowset" />
+                <property dataType="System.String" name="OpenRowsetVariable" />
+                <property dataType="System.String" UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor" name="SqlCommand">SELECT t.TransactionId, t.AccountId, a.CustomerId, CAST(t.BusinessDate AS date) AS BusinessDate,
+       t.Amount, t.CurrencyCode, t.OriginCountryCode, t.TransactionType,
+       c.CustomerRiskScore, c.RequiresManualReview
+FROM src.CustomerTransaction t
+JOIN src.Account a ON a.AccountId = t.AccountId
+JOIN src.Customer c ON c.CustomerId = a.CustomerId
+WHERE t.BusinessDate = ? AND t.Status = 'POSTED';</property>
+                <property dataType="System.String" name="SqlCommandVariable" />
+                <property dataType="System.Int32" name="DefaultCodePage">1252</property>
+                <property dataType="System.Boolean" name="AlwaysUseDefaultCodePage">false</property>
+                <property dataType="System.Int32" typeConverter="AccessMode" name="AccessMode">2</property>
+                <property dataType="System.String" name="ParameterMapping">"Parameter0:Input",{7B0666DE-47DB-57AC-9781-A40777B4BEBA};</property>
+              </properties>
+              <connections>
+                <connection refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[CustomerRiskDb]" connectionManagerRefId="Package.ConnectionManagers[CustomerRiskDb]" name="OleDbConnection" />
+              </connections>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output]" name="OLE DB Source Output">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[TransactionId]" dataType="i8" errorOrTruncationOperation="Conversion" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[TransactionId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[TransactionId]" name="TransactionId" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[AccountId]" dataType="i8" errorOrTruncationOperation="Conversion" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[AccountId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[AccountId]" name="AccountId" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerId]" dataType="i8" errorOrTruncationOperation="Conversion" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[CustomerId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerId]" name="CustomerId" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[BusinessDate]" dataType="dbDate" errorOrTruncationOperation="Conversion" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[BusinessDate]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[BusinessDate]" name="BusinessDate" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]" dataType="numeric" precision="19" scale="2" errorOrTruncationOperation="Conversion" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[Amount]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]" name="Amount" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CurrencyCode]" dataType="wstr" length="3" errorOrTruncationOperation="Conversion" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[CurrencyCode]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CurrencyCode]" name="CurrencyCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[OriginCountryCode]" dataType="wstr" length="2" errorOrTruncationOperation="Conversion" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[OriginCountryCode]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[OriginCountryCode]" name="OriginCountryCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[TransactionType]" dataType="wstr" length="20" errorOrTruncationOperation="Conversion" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[TransactionType]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[TransactionType]" name="TransactionType" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerRiskScore]" dataType="i4" errorOrTruncationOperation="Conversion" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[CustomerRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerRiskScore]" name="CustomerRiskScore" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[RequiresManualReview]" dataType="bool" errorOrTruncationOperation="Conversion" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[RequiresManualReview]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[RequiresManualReview]" name="RequiresManualReview" />
+                  </outputColumns>
+                  <externalMetadataColumns isUsed="True">
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[TransactionId]" dataType="i8" name="TransactionId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[AccountId]" dataType="i8" name="AccountId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[CustomerId]" dataType="i8" name="CustomerId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[BusinessDate]" dataType="dbDate" name="BusinessDate" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[Amount]" dataType="numeric" precision="19" scale="2" name="Amount" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[CurrencyCode]" dataType="wstr" length="3" name="CurrencyCode" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[OriginCountryCode]" dataType="wstr" length="2" name="OriginCountryCode" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[TransactionType]" dataType="wstr" length="20" name="TransactionType" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[CustomerRiskScore]" dataType="i4" name="CustomerRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].ExternalColumns[RequiresManualReview]" dataType="bool" name="RequiresManualReview" />
+                  </externalMetadataColumns>
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Error Output]" isErrorOut="true" name="OLE DB Source Error Output">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\RC Rows Extracted" componentClassID="Microsoft.RowCount" description="Row Count" name="RC Rows Extracted" version="0">
+              <properties>
+                <property dataType="System.String" name="VariableName">User::RowsExtracted</property>
+              </properties>
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\RC Rows Extracted.Inputs[Row Count Input 1]" name="Row Count Input 1">
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\RC Rows Extracted.Outputs[Row Count Output 1]" name="Row Count Output 1" synchronousInputId="Package\DFT Enrich and Classify Transactions\RC Rows Extracted.Inputs[Row Count Input 1]">
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\LKP Country Risk" componentClassID="Microsoft.Lookup" description="Lookup" name="LKP Country Risk" version="6" usesDispositions="true">
+              <properties>
+                <property dataType="System.String" UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor" name="SqlCommand">SELECT CountryCode, CountryRiskScore, RiskTier FROM ref.CountryRisk WHERE IsActive = 1</property>
+                <property dataType="System.String" name="SqlCommandParam" />
+                <property dataType="System.Int32" typeConverter="LookupConnectionType" name="ConnectionType">0</property>
+                <property dataType="System.Int32" typeConverter="CacheType" name="CacheType">0</property>
+                <property dataType="System.Int32" typeConverter="LookupNoMatchBehavior" name="NoMatchBehavior">1</property>
+                <property dataType="System.Int32" name="NoMatchCachePercentage">0</property>
+                <property dataType="System.String" name="ReferenceMetadataXml">&lt;referenceMetadata&gt;&lt;referenceColumns&gt;&lt;referenceColumn name="CountryCode" /&gt;&lt;referenceColumn name="CountryRiskScore" /&gt;&lt;referenceColumn name="RiskTier" /&gt;&lt;/referenceColumns&gt;&lt;/referenceMetadata&gt;</property>
+                <property dataType="System.Int32" name="DefaultCodePage">1252</property>
+                <property dataType="System.Int32" name="MaxMemoryUsage">25</property>
+              </properties>
+              <connections>
+                <connection refId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[CustomerRiskDb]" connectionManagerRefId="Package.ConnectionManagers[CustomerRiskDb]" name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Inputs[Lookup Input]" name="Lookup Input">
+                  <inputColumns>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Inputs[Lookup Input].Columns[OriginCountryCode]" cachedDataType="wstr" cachedLength="2" cachedName="OriginCountryCode" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[OriginCountryCode]">
+                      <properties>
+                        <property dataType="System.String" name="JoinToReferenceColumn">CountryCode</property>
+                        <property dataType="System.String" name="CopyFromReferenceColumn" />
+                      </properties>
+                    </inputColumn>
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output]" exclusionGroup="1" name="Lookup Match Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Inputs[Lookup Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskScore]" dataType="i4" errorOrTruncationOperation="Copy Column" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" lineageId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskScore]" name="CountryRiskScore">
+                      <properties>
+                        <property dataType="System.String" name="CopyFromReferenceColumn">CountryRiskScore</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskTier]" dataType="wstr" length="20" errorOrTruncationOperation="Copy Column" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" lineageId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskTier]" name="CountryRiskTier">
+                      <properties>
+                        <property dataType="System.String" name="CopyFromReferenceColumn">RiskTier</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup No Match Output]" exclusionGroup="1" name="Lookup No Match Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Inputs[Lookup Input]">
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Error Output]" isErrorOut="true" name="Lookup Error Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Inputs[Lookup Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score" componentClassID="Microsoft.DerivedColumn" description="Derived Column" name="DER Calculate Risk Score" version="0" usesDispositions="true">
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Inputs[Derived Column Input]" name="Derived Column Input">
+                  <inputColumns>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Inputs[Derived Column Input].Columns[Amount]" cachedDataType="numeric" cachedPrecision="19" cachedScale="2" cachedName="Amount" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Inputs[Derived Column Input].Columns[CustomerRiskScore]" cachedDataType="i4" cachedName="CustomerRiskScore" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Inputs[Derived Column Input].Columns[CountryRiskScore]" cachedDataType="i4" cachedName="CountryRiskScore" lineageId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskScore]" />
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output]" exclusionGroup="0" name="Derived Column Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Inputs[Derived Column Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[AmountRiskScore]" dataType="i4" errorOrTruncationOperation="Computation" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[AmountRiskScore]" name="AmountRiskScore">
+                      <properties>
+                        <property dataType="System.String" containsID="true" description="Derived Column Expression" name="Expression">#{Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]} &gt;= 10000 ? 50 : (#{Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]} &gt;= 5000 ? 20 : 0)</property>
+                        <property dataType="System.String" containsID="true" description="Derived Column Friendly Expression" expressionType="Notify" name="FriendlyExpression">[Amount] &gt;= 10000 ? 50 : ([Amount] &gt;= 5000 ? 20 : 0)</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[CombinedRiskScore]" dataType="i4" errorOrTruncationOperation="Computation" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[CombinedRiskScore]" name="CombinedRiskScore">
+                      <properties>
+                        <property dataType="System.String" containsID="true" description="Derived Column Expression" name="Expression">#{Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerRiskScore]} + #{Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskScore]} + (#{Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]} &gt;= 10000 ? 50 : (#{Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]} &gt;= 5000 ? 20 : 0))</property>
+                        <property dataType="System.String" containsID="true" description="Derived Column Friendly Expression" expressionType="Notify" name="FriendlyExpression">[CustomerRiskScore] + [CountryRiskScore] + ([Amount] &gt;= 10000 ? 50 : ([Amount] &gt;= 5000 ? 20 : 0))</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[BatchId]" dataType="i8" errorOrTruncationOperation="Computation" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[BatchId]" name="BatchId">
+                      <properties>
+                        <property dataType="System.String" containsID="true" description="Derived Column Expression" name="Expression">@[User::BatchId]</property>
+                        <property dataType="System.String" containsID="true" description="Derived Column Friendly Expression" expressionType="Notify" name="FriendlyExpression">@[User::BatchId]</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[LoadUtc]" dataType="dbTimeStamp" errorOrTruncationOperation="Computation" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[LoadUtc]" name="LoadUtc">
+                      <properties>
+                        <property dataType="System.String" containsID="true" description="Derived Column Expression" name="Expression">(DT_DBTIMESTAMP)GETUTCDATE()</property>
+                        <property dataType="System.String" containsID="true" description="Derived Column Friendly Expression" expressionType="Notify" name="FriendlyExpression">(DT_DBTIMESTAMP)GETUTCDATE()</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Error Output]" isErrorOut="true" name="Derived Column Error Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Inputs[Derived Column Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\RC Rows Classified" componentClassID="Microsoft.RowCount" description="Row Count" name="RC Rows Classified" version="0">
+              <properties>
+                <property dataType="System.String" name="VariableName">User::RowsLoaded</property>
+              </properties>
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\RC Rows Classified.Inputs[Row Count Input 1]" name="Row Count Input 1">
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\RC Rows Classified.Outputs[Row Count Output 1]" name="Row Count Output 1" synchronousInputId="Package\DFT Enrich and Classify Transactions\RC Rows Classified.Inputs[Row Count Input 1]">
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk" componentClassID="Microsoft.ConditionalSplit" description="Conditional Split" name="CSPL Transaction Risk" version="0" usesDispositions="true">
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Inputs[Conditional Split Input]" name="Conditional Split Input">
+                  <inputColumns>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Inputs[Conditional Split Input].Columns[Amount]" cachedDataType="numeric" cachedPrecision="19" cachedScale="2" cachedName="Amount" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Inputs[Conditional Split Input].Columns[CountryRiskScore]" cachedDataType="i4" cachedName="CountryRiskScore" lineageId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Inputs[Conditional Split Input].Columns[CombinedRiskScore]" cachedDataType="i4" cachedName="CombinedRiskScore" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[CombinedRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Inputs[Conditional Split Input].Columns[RequiresManualReview]" cachedDataType="bool" cachedName="RequiresManualReview" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[RequiresManualReview]" />
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Outputs[High Risk]" exclusionGroup="1" name="High Risk" synchronousInputId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Inputs[Conditional Split Input]">
+                  <properties>
+                    <property dataType="System.Int32" name="EvaluationOrder">0</property>
+                    <property dataType="System.String" expressionType="Notify" name="FriendlyExpression">[Amount] &gt;= 10000 || [CountryRiskScore] &gt;= 70 || [CombinedRiskScore] &gt;= 100</property>
+                    <property dataType="System.String" containsID="true" name="Expression">#{Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]} &gt;= 10000 || #{Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskScore]} &gt;= 70 || #{Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[CombinedRiskScore]} &gt;= 100</property>
+                    <property dataType="System.Boolean" name="IsDefaultOut">false</property>
+                  </properties>
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Outputs[Manual Review]" exclusionGroup="1" name="Manual Review" synchronousInputId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Inputs[Conditional Split Input]">
+                  <properties>
+                    <property dataType="System.Int32" name="EvaluationOrder">1</property>
+                    <property dataType="System.String" expressionType="Notify" name="FriendlyExpression">[RequiresManualReview] || [CombinedRiskScore] &gt;= 50</property>
+                    <property dataType="System.String" containsID="true" name="Expression">#{Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[RequiresManualReview]} || #{Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[CombinedRiskScore]} &gt;= 50</property>
+                    <property dataType="System.Boolean" name="IsDefaultOut">false</property>
+                  </properties>
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Outputs[Standard]" exclusionGroup="1" name="Standard" synchronousInputId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Inputs[Conditional Split Input]">
+                  <properties>
+                    <property dataType="System.Boolean" name="IsDefaultOut">true</property>
+                  </properties>
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Outputs[Conditional Split Error Output]" isErrorOut="true" name="Conditional Split Error Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Inputs[Conditional Split Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Outputs[Conditional Split Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Outputs[Conditional Split Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Outputs[Conditional Split Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Outputs[Conditional Split Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\DER Label HIGH" componentClassID="Microsoft.DerivedColumn" description="Derived Column" name="DER Label HIGH" version="0" usesDispositions="true">
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Inputs[Derived Column Input]" name="Derived Column Input">
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Outputs[Derived Column Output]" exclusionGroup="0" name="Derived Column Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Inputs[Derived Column Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Outputs[Derived Column Output].Columns[RiskClass]" dataType="wstr" length="20" errorOrTruncationOperation="Computation" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" lineageId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Outputs[Derived Column Output].Columns[RiskClass]" name="RiskClass">
+                      <properties>
+                        <property dataType="System.String" containsID="true" description="Derived Column Expression" name="Expression">"HIGH"</property>
+                        <property dataType="System.String" containsID="true" description="Derived Column Friendly Expression" expressionType="Notify" name="FriendlyExpression">"HIGH"</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Outputs[Derived Column Error Output]" isErrorOut="true" name="Derived Column Error Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Inputs[Derived Column Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Outputs[Derived Column Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Outputs[Derived Column Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Outputs[Derived Column Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Outputs[Derived Column Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\MC HIGH" componentClassID="Microsoft.Multicast" description="Multicast" name="MC HIGH" version="0">
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\MC HIGH.Inputs[Multicast Input 1]" name="Multicast Input 1">
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\MC HIGH.Outputs[Multicast Output 1]" name="Multicast Output 1" synchronousInputId="Package\DFT Enrich and Classify Transactions\MC HIGH.Inputs[Multicast Input 1]">
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\MC HIGH.Outputs[Multicast Output 2]" name="Multicast Output 2" synchronousInputId="Package\DFT Enrich and Classify Transactions\MC HIGH.Inputs[Multicast Input 1]">
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH" componentClassID="Microsoft.OLEDBDestination" description="OLE DB Destination" name="OLE DST HIGH" version="4" usesDispositions="true">
+              <properties>
+                <property dataType="System.Int32" name="CommandTimeout">0</property>
+                <property dataType="System.String" name="OpenRowset">[ssisout].[TransactionRiskClassified]</property>
+                <property dataType="System.String" name="OpenRowsetVariable" />
+                <property dataType="System.String" name="SqlCommand" />
+                <property dataType="System.Int32" name="DefaultCodePage">1252</property>
+                <property dataType="System.Boolean" name="AlwaysUseDefaultCodePage">false</property>
+                <property dataType="System.Int32" typeConverter="AccessMode" name="AccessMode">3</property>
+                <property dataType="System.Boolean" name="FastLoadKeepIdentity">false</property>
+                <property dataType="System.Boolean" name="FastLoadKeepNulls">false</property>
+                <property dataType="System.String" name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property dataType="System.Int32" name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[CustomerRiskDb]" connectionManagerRefId="Package.ConnectionManagers[CustomerRiskDb]" name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input]" name="OLE DB Destination Input" hasSideEffects="true">
+                  <inputColumns>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[TransactionId]" cachedDataType="i8" cachedName="TransactionId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[TransactionId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[TransactionId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[AccountId]" cachedDataType="i8" cachedName="AccountId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[AccountId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[AccountId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[CustomerId]" cachedDataType="i8" cachedName="CustomerId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[CustomerId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[BusinessDate]" cachedDataType="dbDate" cachedName="BusinessDate" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[BusinessDate]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[BusinessDate]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[Amount]" cachedDataType="numeric" cachedPrecision="19" cachedScale="2" cachedName="Amount" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[Amount]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[CurrencyCode]" cachedDataType="wstr" cachedLength="3" cachedName="CurrencyCode" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[CurrencyCode]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CurrencyCode]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[OriginCountryCode]" cachedDataType="wstr" cachedLength="2" cachedName="OriginCountryCode" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[OriginCountryCode]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[OriginCountryCode]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[TransactionType]" cachedDataType="wstr" cachedLength="20" cachedName="TransactionType" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[TransactionType]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[TransactionType]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[CustomerRiskScore]" cachedDataType="i4" cachedName="CustomerRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[CustomerRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[RequiresManualReview]" cachedDataType="bool" cachedName="RequiresManualReview" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[RequiresManualReview]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[RequiresManualReview]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[CountryRiskScore]" cachedDataType="i4" cachedName="CountryRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[CountryRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[CountryRiskTier]" cachedDataType="wstr" cachedLength="20" cachedName="CountryRiskTier" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[CountryRiskTier]" lineageId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskTier]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[AmountRiskScore]" cachedDataType="i4" cachedName="AmountRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[AmountRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[AmountRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[CombinedRiskScore]" cachedDataType="i4" cachedName="CombinedRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[CombinedRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[CombinedRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[BatchId]" cachedDataType="i8" cachedName="BatchId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[BatchId]" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[BatchId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[LoadUtc]" cachedDataType="dbTimeStamp" cachedName="LoadUtc" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[LoadUtc]" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[LoadUtc]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].Columns[RiskClass]" cachedDataType="wstr" cachedLength="20" cachedName="RiskClass" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[RiskClass]" lineageId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Outputs[Derived Column Output].Columns[RiskClass]" />
+                  </inputColumns>
+                  <externalMetadataColumns isUsed="True">
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[TransactionId]" dataType="i8" name="TransactionId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[AccountId]" dataType="i8" name="AccountId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[CustomerId]" dataType="i8" name="CustomerId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[BusinessDate]" dataType="dbDate" name="BusinessDate" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[Amount]" dataType="numeric" precision="19" scale="2" name="Amount" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[CurrencyCode]" dataType="wstr" length="3" name="CurrencyCode" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[OriginCountryCode]" dataType="wstr" length="2" name="OriginCountryCode" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[TransactionType]" dataType="wstr" length="20" name="TransactionType" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[CustomerRiskScore]" dataType="i4" name="CustomerRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[RequiresManualReview]" dataType="bool" name="RequiresManualReview" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[CountryRiskScore]" dataType="i4" name="CountryRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[CountryRiskTier]" dataType="wstr" length="20" name="CountryRiskTier" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[AmountRiskScore]" dataType="i4" name="AmountRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[CombinedRiskScore]" dataType="i4" name="CombinedRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[BatchId]" dataType="i8" name="BatchId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[LoadUtc]" dataType="dbTimeStamp" name="LoadUtc" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input].ExternalColumns[RiskClass]" dataType="wstr" length="20" name="RiskClass" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Outputs[OLE DB Destination Error Output]" isErrorOut="true" name="OLE DB Destination Error Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW" componentClassID="Microsoft.DerivedColumn" description="Derived Column" name="DER Label MANUAL_REVIEW" version="0" usesDispositions="true">
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Inputs[Derived Column Input]" name="Derived Column Input">
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Outputs[Derived Column Output]" exclusionGroup="0" name="Derived Column Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Inputs[Derived Column Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Outputs[Derived Column Output].Columns[RiskClass]" dataType="wstr" length="20" errorOrTruncationOperation="Computation" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" lineageId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Outputs[Derived Column Output].Columns[RiskClass]" name="RiskClass">
+                      <properties>
+                        <property dataType="System.String" containsID="true" description="Derived Column Expression" name="Expression">"MANUAL_REVIEW"</property>
+                        <property dataType="System.String" containsID="true" description="Derived Column Friendly Expression" expressionType="Notify" name="FriendlyExpression">"MANUAL_REVIEW"</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Outputs[Derived Column Error Output]" isErrorOut="true" name="Derived Column Error Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Inputs[Derived Column Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Outputs[Derived Column Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Outputs[Derived Column Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Outputs[Derived Column Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Outputs[Derived Column Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\MC MANUAL_REVIEW" componentClassID="Microsoft.Multicast" description="Multicast" name="MC MANUAL_REVIEW" version="0">
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\MC MANUAL_REVIEW.Inputs[Multicast Input 1]" name="Multicast Input 1">
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\MC MANUAL_REVIEW.Outputs[Multicast Output 1]" name="Multicast Output 1" synchronousInputId="Package\DFT Enrich and Classify Transactions\MC MANUAL_REVIEW.Inputs[Multicast Input 1]">
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\MC MANUAL_REVIEW.Outputs[Multicast Output 2]" name="Multicast Output 2" synchronousInputId="Package\DFT Enrich and Classify Transactions\MC MANUAL_REVIEW.Inputs[Multicast Input 1]">
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW" componentClassID="Microsoft.OLEDBDestination" description="OLE DB Destination" name="OLE DST MANUAL_REVIEW" version="4" usesDispositions="true">
+              <properties>
+                <property dataType="System.Int32" name="CommandTimeout">0</property>
+                <property dataType="System.String" name="OpenRowset">[ssisout].[TransactionRiskClassified]</property>
+                <property dataType="System.String" name="OpenRowsetVariable" />
+                <property dataType="System.String" name="SqlCommand" />
+                <property dataType="System.Int32" name="DefaultCodePage">1252</property>
+                <property dataType="System.Boolean" name="AlwaysUseDefaultCodePage">false</property>
+                <property dataType="System.Int32" typeConverter="AccessMode" name="AccessMode">3</property>
+                <property dataType="System.Boolean" name="FastLoadKeepIdentity">false</property>
+                <property dataType="System.Boolean" name="FastLoadKeepNulls">false</property>
+                <property dataType="System.String" name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property dataType="System.Int32" name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[CustomerRiskDb]" connectionManagerRefId="Package.ConnectionManagers[CustomerRiskDb]" name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input]" name="OLE DB Destination Input" hasSideEffects="true">
+                  <inputColumns>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[TransactionId]" cachedDataType="i8" cachedName="TransactionId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[TransactionId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[TransactionId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[AccountId]" cachedDataType="i8" cachedName="AccountId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[AccountId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[AccountId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[CustomerId]" cachedDataType="i8" cachedName="CustomerId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[CustomerId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[BusinessDate]" cachedDataType="dbDate" cachedName="BusinessDate" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[BusinessDate]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[BusinessDate]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[Amount]" cachedDataType="numeric" cachedPrecision="19" cachedScale="2" cachedName="Amount" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[Amount]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[CurrencyCode]" cachedDataType="wstr" cachedLength="3" cachedName="CurrencyCode" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[CurrencyCode]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CurrencyCode]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[OriginCountryCode]" cachedDataType="wstr" cachedLength="2" cachedName="OriginCountryCode" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[OriginCountryCode]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[OriginCountryCode]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[TransactionType]" cachedDataType="wstr" cachedLength="20" cachedName="TransactionType" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[TransactionType]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[TransactionType]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[CustomerRiskScore]" cachedDataType="i4" cachedName="CustomerRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[CustomerRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[RequiresManualReview]" cachedDataType="bool" cachedName="RequiresManualReview" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[RequiresManualReview]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[RequiresManualReview]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[CountryRiskScore]" cachedDataType="i4" cachedName="CountryRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[CountryRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[CountryRiskTier]" cachedDataType="wstr" cachedLength="20" cachedName="CountryRiskTier" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[CountryRiskTier]" lineageId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskTier]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[AmountRiskScore]" cachedDataType="i4" cachedName="AmountRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[AmountRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[AmountRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[CombinedRiskScore]" cachedDataType="i4" cachedName="CombinedRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[CombinedRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[CombinedRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[BatchId]" cachedDataType="i8" cachedName="BatchId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[BatchId]" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[BatchId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[LoadUtc]" cachedDataType="dbTimeStamp" cachedName="LoadUtc" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[LoadUtc]" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[LoadUtc]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].Columns[RiskClass]" cachedDataType="wstr" cachedLength="20" cachedName="RiskClass" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[RiskClass]" lineageId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Outputs[Derived Column Output].Columns[RiskClass]" />
+                  </inputColumns>
+                  <externalMetadataColumns isUsed="True">
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[TransactionId]" dataType="i8" name="TransactionId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[AccountId]" dataType="i8" name="AccountId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[CustomerId]" dataType="i8" name="CustomerId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[BusinessDate]" dataType="dbDate" name="BusinessDate" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[Amount]" dataType="numeric" precision="19" scale="2" name="Amount" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[CurrencyCode]" dataType="wstr" length="3" name="CurrencyCode" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[OriginCountryCode]" dataType="wstr" length="2" name="OriginCountryCode" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[TransactionType]" dataType="wstr" length="20" name="TransactionType" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[CustomerRiskScore]" dataType="i4" name="CustomerRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[RequiresManualReview]" dataType="bool" name="RequiresManualReview" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[CountryRiskScore]" dataType="i4" name="CountryRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[CountryRiskTier]" dataType="wstr" length="20" name="CountryRiskTier" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[AmountRiskScore]" dataType="i4" name="AmountRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[CombinedRiskScore]" dataType="i4" name="CombinedRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[BatchId]" dataType="i8" name="BatchId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[LoadUtc]" dataType="dbTimeStamp" name="LoadUtc" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input].ExternalColumns[RiskClass]" dataType="wstr" length="20" name="RiskClass" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Outputs[OLE DB Destination Error Output]" isErrorOut="true" name="OLE DB Destination Error Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD" componentClassID="Microsoft.DerivedColumn" description="Derived Column" name="DER Label STANDARD" version="0" usesDispositions="true">
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Inputs[Derived Column Input]" name="Derived Column Input">
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Outputs[Derived Column Output]" exclusionGroup="0" name="Derived Column Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Inputs[Derived Column Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Outputs[Derived Column Output].Columns[RiskClass]" dataType="wstr" length="20" errorOrTruncationOperation="Computation" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" lineageId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Outputs[Derived Column Output].Columns[RiskClass]" name="RiskClass">
+                      <properties>
+                        <property dataType="System.String" containsID="true" description="Derived Column Expression" name="Expression">"STANDARD"</property>
+                        <property dataType="System.String" containsID="true" description="Derived Column Friendly Expression" expressionType="Notify" name="FriendlyExpression">"STANDARD"</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Outputs[Derived Column Error Output]" isErrorOut="true" name="Derived Column Error Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Inputs[Derived Column Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Outputs[Derived Column Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Outputs[Derived Column Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Outputs[Derived Column Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Outputs[Derived Column Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\MC STANDARD" componentClassID="Microsoft.Multicast" description="Multicast" name="MC STANDARD" version="0">
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\MC STANDARD.Inputs[Multicast Input 1]" name="Multicast Input 1">
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\MC STANDARD.Outputs[Multicast Output 1]" name="Multicast Output 1" synchronousInputId="Package\DFT Enrich and Classify Transactions\MC STANDARD.Inputs[Multicast Input 1]">
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\MC STANDARD.Outputs[Multicast Output 2]" name="Multicast Output 2" synchronousInputId="Package\DFT Enrich and Classify Transactions\MC STANDARD.Inputs[Multicast Input 1]">
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD" componentClassID="Microsoft.OLEDBDestination" description="OLE DB Destination" name="OLE DST STANDARD" version="4" usesDispositions="true">
+              <properties>
+                <property dataType="System.Int32" name="CommandTimeout">0</property>
+                <property dataType="System.String" name="OpenRowset">[ssisout].[TransactionRiskClassified]</property>
+                <property dataType="System.String" name="OpenRowsetVariable" />
+                <property dataType="System.String" name="SqlCommand" />
+                <property dataType="System.Int32" name="DefaultCodePage">1252</property>
+                <property dataType="System.Boolean" name="AlwaysUseDefaultCodePage">false</property>
+                <property dataType="System.Int32" typeConverter="AccessMode" name="AccessMode">3</property>
+                <property dataType="System.Boolean" name="FastLoadKeepIdentity">false</property>
+                <property dataType="System.Boolean" name="FastLoadKeepNulls">false</property>
+                <property dataType="System.String" name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property dataType="System.Int32" name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[CustomerRiskDb]" connectionManagerRefId="Package.ConnectionManagers[CustomerRiskDb]" name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input]" name="OLE DB Destination Input" hasSideEffects="true">
+                  <inputColumns>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[TransactionId]" cachedDataType="i8" cachedName="TransactionId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[TransactionId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[TransactionId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[AccountId]" cachedDataType="i8" cachedName="AccountId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[AccountId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[AccountId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[CustomerId]" cachedDataType="i8" cachedName="CustomerId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[CustomerId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[BusinessDate]" cachedDataType="dbDate" cachedName="BusinessDate" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[BusinessDate]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[BusinessDate]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[Amount]" cachedDataType="numeric" cachedPrecision="19" cachedScale="2" cachedName="Amount" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[Amount]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[CurrencyCode]" cachedDataType="wstr" cachedLength="3" cachedName="CurrencyCode" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[CurrencyCode]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CurrencyCode]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[OriginCountryCode]" cachedDataType="wstr" cachedLength="2" cachedName="OriginCountryCode" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[OriginCountryCode]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[OriginCountryCode]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[TransactionType]" cachedDataType="wstr" cachedLength="20" cachedName="TransactionType" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[TransactionType]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[TransactionType]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[CustomerRiskScore]" cachedDataType="i4" cachedName="CustomerRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[CustomerRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[RequiresManualReview]" cachedDataType="bool" cachedName="RequiresManualReview" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[RequiresManualReview]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[RequiresManualReview]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[CountryRiskScore]" cachedDataType="i4" cachedName="CountryRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[CountryRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[CountryRiskTier]" cachedDataType="wstr" cachedLength="20" cachedName="CountryRiskTier" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[CountryRiskTier]" lineageId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output].Columns[CountryRiskTier]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[AmountRiskScore]" cachedDataType="i4" cachedName="AmountRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[AmountRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[AmountRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[CombinedRiskScore]" cachedDataType="i4" cachedName="CombinedRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[CombinedRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[CombinedRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[BatchId]" cachedDataType="i8" cachedName="BatchId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[BatchId]" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[BatchId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[LoadUtc]" cachedDataType="dbTimeStamp" cachedName="LoadUtc" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[LoadUtc]" lineageId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output].Columns[LoadUtc]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].Columns[RiskClass]" cachedDataType="wstr" cachedLength="20" cachedName="RiskClass" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[RiskClass]" lineageId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Outputs[Derived Column Output].Columns[RiskClass]" />
+                  </inputColumns>
+                  <externalMetadataColumns isUsed="True">
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[TransactionId]" dataType="i8" name="TransactionId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[AccountId]" dataType="i8" name="AccountId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[CustomerId]" dataType="i8" name="CustomerId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[BusinessDate]" dataType="dbDate" name="BusinessDate" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[Amount]" dataType="numeric" precision="19" scale="2" name="Amount" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[CurrencyCode]" dataType="wstr" length="3" name="CurrencyCode" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[OriginCountryCode]" dataType="wstr" length="2" name="OriginCountryCode" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[TransactionType]" dataType="wstr" length="20" name="TransactionType" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[CustomerRiskScore]" dataType="i4" name="CustomerRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[RequiresManualReview]" dataType="bool" name="RequiresManualReview" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[CountryRiskScore]" dataType="i4" name="CountryRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[CountryRiskTier]" dataType="wstr" length="20" name="CountryRiskTier" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[AmountRiskScore]" dataType="i4" name="AmountRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[CombinedRiskScore]" dataType="i4" name="CombinedRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[BatchId]" dataType="i8" name="BatchId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[LoadUtc]" dataType="dbTimeStamp" name="LoadUtc" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input].ExternalColumns[RiskClass]" dataType="wstr" length="20" name="RiskClass" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Outputs[OLE DB Destination Error Output]" isErrorOut="true" name="OLE DB Destination Error Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary" componentClassID="Microsoft.UnionAll" description="Union All" name="UALL Classified For Summary" version="0">
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 1]" name="Union All Input 1">
+                  <inputColumns>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 1].Columns[CustomerId]" cachedDataType="i8" cachedName="CustomerId" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerId]">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="OutputColumnLineageID">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[CustomerId]}</property>
+                      </properties>
+                    </inputColumn>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 1].Columns[BusinessDate]" cachedDataType="dbDate" cachedName="BusinessDate" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[BusinessDate]">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="OutputColumnLineageID">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[BusinessDate]}</property>
+                      </properties>
+                    </inputColumn>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 1].Columns[RiskClass]" cachedDataType="wstr" cachedLength="20" cachedName="RiskClass" lineageId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Outputs[Derived Column Output].Columns[RiskClass]">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="OutputColumnLineageID">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[RiskClass]}</property>
+                      </properties>
+                    </inputColumn>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 1].Columns[Amount]" cachedDataType="numeric" cachedPrecision="19" cachedScale="2" cachedName="Amount" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="OutputColumnLineageID">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[Amount]}</property>
+                      </properties>
+                    </inputColumn>
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+                <input refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 2]" name="Union All Input 2">
+                  <inputColumns>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 2].Columns[CustomerId]" cachedDataType="i8" cachedName="CustomerId" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerId]">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="OutputColumnLineageID">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[CustomerId]}</property>
+                      </properties>
+                    </inputColumn>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 2].Columns[BusinessDate]" cachedDataType="dbDate" cachedName="BusinessDate" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[BusinessDate]">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="OutputColumnLineageID">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[BusinessDate]}</property>
+                      </properties>
+                    </inputColumn>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 2].Columns[RiskClass]" cachedDataType="wstr" cachedLength="20" cachedName="RiskClass" lineageId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Outputs[Derived Column Output].Columns[RiskClass]">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="OutputColumnLineageID">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[RiskClass]}</property>
+                      </properties>
+                    </inputColumn>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 2].Columns[Amount]" cachedDataType="numeric" cachedPrecision="19" cachedScale="2" cachedName="Amount" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="OutputColumnLineageID">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[Amount]}</property>
+                      </properties>
+                    </inputColumn>
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+                <input refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 3]" name="Union All Input 3">
+                  <inputColumns>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 3].Columns[CustomerId]" cachedDataType="i8" cachedName="CustomerId" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerId]">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="OutputColumnLineageID">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[CustomerId]}</property>
+                      </properties>
+                    </inputColumn>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 3].Columns[BusinessDate]" cachedDataType="dbDate" cachedName="BusinessDate" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[BusinessDate]">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="OutputColumnLineageID">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[BusinessDate]}</property>
+                      </properties>
+                    </inputColumn>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 3].Columns[RiskClass]" cachedDataType="wstr" cachedLength="20" cachedName="RiskClass" lineageId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Outputs[Derived Column Output].Columns[RiskClass]">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="OutputColumnLineageID">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[RiskClass]}</property>
+                      </properties>
+                    </inputColumn>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 3].Columns[Amount]" cachedDataType="numeric" cachedPrecision="19" cachedScale="2" cachedName="Amount" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="OutputColumnLineageID">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[Amount]}</property>
+                      </properties>
+                    </inputColumn>
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1]" name="Union All Output 1">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[CustomerId]" dataType="i8" lineageId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[CustomerId]" name="CustomerId" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[BusinessDate]" dataType="dbDate" lineageId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[BusinessDate]" name="BusinessDate" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[RiskClass]" dataType="wstr" length="20" lineageId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[RiskClass]" name="RiskClass" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[Amount]" dataType="numeric" precision="19" scale="2" lineageId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[Amount]" name="Amount" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk" componentClassID="Microsoft.Aggregate" description="Aggregate" name="AGG Customer Daily Risk" version="3">
+              <properties>
+                <property dataType="System.Int32" name="KeyScale">0</property>
+                <property dataType="System.String" name="Keys" />
+                <property dataType="System.Int32" name="CountDistinctScale">0</property>
+                <property dataType="System.Int32" name="AutoExtendFactor">25</property>
+              </properties>
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Inputs[Aggregate Input 1]" name="Aggregate Input 1">
+                  <inputColumns>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Inputs[Aggregate Input 1].Columns[CustomerId]" cachedDataType="i8" cachedName="CustomerId" lineageId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[CustomerId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Inputs[Aggregate Input 1].Columns[BusinessDate]" cachedDataType="dbDate" cachedName="BusinessDate" lineageId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[BusinessDate]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Inputs[Aggregate Input 1].Columns[RiskClass]" cachedDataType="wstr" cachedLength="20" cachedName="RiskClass" lineageId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[RiskClass]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Inputs[Aggregate Input 1].Columns[Amount]" cachedDataType="numeric" cachedPrecision="19" cachedScale="2" cachedName="Amount" lineageId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[Amount]" />
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1]" name="Aggregate Output 1">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[CustomerId]" dataType="i8" lineageId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[CustomerId]" name="CustomerId">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="AggregationColumnId">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[CustomerId]}</property>
+                        <property dataType="System.Int32" typeConverter="AggregationType" name="AggregationType">0</property>
+                        <property dataType="System.Int32" name="IsBig">0</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[BusinessDate]" dataType="dbDate" lineageId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[BusinessDate]" name="BusinessDate">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="AggregationColumnId">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[BusinessDate]}</property>
+                        <property dataType="System.Int32" typeConverter="AggregationType" name="AggregationType">0</property>
+                        <property dataType="System.Int32" name="IsBig">0</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[RiskClass]" dataType="wstr" length="20" lineageId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[RiskClass]" name="RiskClass">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="AggregationColumnId">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[RiskClass]}</property>
+                        <property dataType="System.Int32" typeConverter="AggregationType" name="AggregationType">0</property>
+                        <property dataType="System.Int32" name="IsBig">0</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[TransactionCount]" dataType="i8" lineageId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[TransactionCount]" name="TransactionCount">
+                      <properties>
+                        <property dataType="System.Int32" typeConverter="AggregationType" name="AggregationType">2</property>
+                        <property dataType="System.Int32" name="IsBig">0</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[TotalAmount]" dataType="numeric" precision="19" scale="2" lineageId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[TotalAmount]" name="TotalAmount">
+                      <properties>
+                        <property dataType="System.Int32" containsID="true" name="AggregationColumnId">#{Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1].Columns[Amount]}</property>
+                        <property dataType="System.Int32" typeConverter="AggregationType" name="AggregationType">4</property>
+                        <property dataType="System.Int32" name="IsBig">0</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage" componentClassID="Microsoft.OLEDBDestination" description="OLE DB Destination" name="OLE DST Customer Risk Stage" version="4" usesDispositions="true">
+              <properties>
+                <property dataType="System.Int32" name="CommandTimeout">0</property>
+                <property dataType="System.String" name="OpenRowset">[ssisout].[CustomerRiskDailyStage]</property>
+                <property dataType="System.String" name="OpenRowsetVariable" />
+                <property dataType="System.String" name="SqlCommand" />
+                <property dataType="System.Int32" name="DefaultCodePage">1252</property>
+                <property dataType="System.Boolean" name="AlwaysUseDefaultCodePage">false</property>
+                <property dataType="System.Int32" typeConverter="AccessMode" name="AccessMode">3</property>
+                <property dataType="System.Boolean" name="FastLoadKeepIdentity">false</property>
+                <property dataType="System.Boolean" name="FastLoadKeepNulls">false</property>
+                <property dataType="System.String" name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property dataType="System.Int32" name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[CustomerRiskDb]" connectionManagerRefId="Package.ConnectionManagers[CustomerRiskDb]" name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input]" name="OLE DB Destination Input" hasSideEffects="true">
+                  <inputColumns>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].Columns[CustomerId]" cachedDataType="i8" cachedName="CustomerId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].ExternalColumns[CustomerId]" lineageId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[CustomerId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].Columns[BusinessDate]" cachedDataType="dbDate" cachedName="BusinessDate" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].ExternalColumns[BusinessDate]" lineageId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[BusinessDate]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].Columns[RiskClass]" cachedDataType="wstr" cachedLength="20" cachedName="RiskClass" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].ExternalColumns[RiskClass]" lineageId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[RiskClass]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].Columns[TransactionCount]" cachedDataType="i8" cachedName="TransactionCount" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].ExternalColumns[TransactionCount]" lineageId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[TransactionCount]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].Columns[TotalAmount]" cachedDataType="numeric" cachedPrecision="19" cachedScale="2" cachedName="TotalAmount" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].ExternalColumns[TotalAmount]" lineageId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1].Columns[TotalAmount]" />
+                  </inputColumns>
+                  <externalMetadataColumns isUsed="True">
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].ExternalColumns[CustomerId]" dataType="i8" name="CustomerId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].ExternalColumns[BusinessDate]" dataType="dbDate" name="BusinessDate" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].ExternalColumns[RiskClass]" dataType="wstr" length="20" name="RiskClass" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].ExternalColumns[TransactionCount]" dataType="i8" name="TransactionCount" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input].ExternalColumns[TotalAmount]" dataType="numeric" precision="19" scale="2" name="TotalAmount" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Outputs[OLE DB Destination Error Output]" isErrorOut="true" name="OLE DB Destination Error Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk" componentClassID="Microsoft.DerivedColumn" description="Derived Column" name="DER Missing Country Risk" version="0" usesDispositions="true">
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Inputs[Derived Column Input]" name="Derived Column Input">
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Output]" exclusionGroup="0" name="Derived Column Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Inputs[Derived Column Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Output].Columns[ExceptionReason]" dataType="wstr" length="50" errorOrTruncationOperation="Computation" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" lineageId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Output].Columns[ExceptionReason]" name="ExceptionReason">
+                      <properties>
+                        <property dataType="System.String" containsID="true" description="Derived Column Expression" name="Expression">"COUNTRY_RISK_NOT_FOUND"</property>
+                        <property dataType="System.String" containsID="true" description="Derived Column Friendly Expression" expressionType="Notify" name="FriendlyExpression">"COUNTRY_RISK_NOT_FOUND"</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Output].Columns[BatchId]" dataType="i8" errorOrTruncationOperation="Computation" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" lineageId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Output].Columns[BatchId]" name="BatchId">
+                      <properties>
+                        <property dataType="System.String" containsID="true" description="Derived Column Expression" name="Expression">@[User::BatchId]</property>
+                        <property dataType="System.String" containsID="true" description="Derived Column Friendly Expression" expressionType="Notify" name="FriendlyExpression">@[User::BatchId]</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Output].Columns[LoadUtc]" dataType="dbTimeStamp" errorOrTruncationOperation="Computation" errorRowDisposition="FailComponent" truncationRowDisposition="FailComponent" lineageId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Output].Columns[LoadUtc]" name="LoadUtc">
+                      <properties>
+                        <property dataType="System.String" containsID="true" description="Derived Column Expression" name="Expression">(DT_DBTIMESTAMP)GETUTCDATE()</property>
+                        <property dataType="System.String" containsID="true" description="Derived Column Friendly Expression" expressionType="Notify" name="FriendlyExpression">(DT_DBTIMESTAMP)GETUTCDATE()</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Error Output]" isErrorOut="true" name="Derived Column Error Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Inputs[Derived Column Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\RC Rows Rejected" componentClassID="Microsoft.RowCount" description="Row Count" name="RC Rows Rejected" version="0">
+              <properties>
+                <property dataType="System.String" name="VariableName">User::RowsRejected</property>
+              </properties>
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\RC Rows Rejected.Inputs[Row Count Input 1]" name="Row Count Input 1">
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\RC Rows Rejected.Outputs[Row Count Output 1]" name="Row Count Output 1" synchronousInputId="Package\DFT Enrich and Classify Transactions\RC Rows Rejected.Inputs[Row Count Input 1]">
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions" componentClassID="Microsoft.OLEDBDestination" description="OLE DB Destination" name="OLE DST Risk Exceptions" version="4" usesDispositions="true">
+              <properties>
+                <property dataType="System.Int32" name="CommandTimeout">0</property>
+                <property dataType="System.String" name="OpenRowset">[ssisout].[TransactionRiskException]</property>
+                <property dataType="System.String" name="OpenRowsetVariable" />
+                <property dataType="System.String" name="SqlCommand" />
+                <property dataType="System.Int32" name="DefaultCodePage">1252</property>
+                <property dataType="System.Boolean" name="AlwaysUseDefaultCodePage">false</property>
+                <property dataType="System.Int32" typeConverter="AccessMode" name="AccessMode">3</property>
+                <property dataType="System.Boolean" name="FastLoadKeepIdentity">false</property>
+                <property dataType="System.Boolean" name="FastLoadKeepNulls">false</property>
+                <property dataType="System.String" name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property dataType="System.Int32" name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[CustomerRiskDb]" connectionManagerRefId="Package.ConnectionManagers[CustomerRiskDb]" name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input]" name="OLE DB Destination Input" hasSideEffects="true">
+                  <inputColumns>
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[TransactionId]" cachedDataType="i8" cachedName="TransactionId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[TransactionId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[TransactionId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[AccountId]" cachedDataType="i8" cachedName="AccountId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[AccountId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[AccountId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[CustomerId]" cachedDataType="i8" cachedName="CustomerId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[CustomerId]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[BusinessDate]" cachedDataType="dbDate" cachedName="BusinessDate" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[BusinessDate]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[BusinessDate]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[Amount]" cachedDataType="numeric" cachedPrecision="19" cachedScale="2" cachedName="Amount" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[Amount]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[Amount]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[CurrencyCode]" cachedDataType="wstr" cachedLength="3" cachedName="CurrencyCode" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[CurrencyCode]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CurrencyCode]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[OriginCountryCode]" cachedDataType="wstr" cachedLength="2" cachedName="OriginCountryCode" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[OriginCountryCode]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[OriginCountryCode]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[TransactionType]" cachedDataType="wstr" cachedLength="20" cachedName="TransactionType" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[TransactionType]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[TransactionType]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[CustomerRiskScore]" cachedDataType="i4" cachedName="CustomerRiskScore" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[CustomerRiskScore]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[CustomerRiskScore]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[RequiresManualReview]" cachedDataType="bool" cachedName="RequiresManualReview" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[RequiresManualReview]" lineageId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output].Columns[RequiresManualReview]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[ExceptionReason]" cachedDataType="wstr" cachedLength="50" cachedName="ExceptionReason" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[ExceptionReason]" lineageId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Output].Columns[ExceptionReason]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[BatchId]" cachedDataType="i8" cachedName="BatchId" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[BatchId]" lineageId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Output].Columns[BatchId]" />
+                    <inputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].Columns[LoadUtc]" cachedDataType="dbTimeStamp" cachedName="LoadUtc" externalMetadataColumnId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[LoadUtc]" lineageId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Output].Columns[LoadUtc]" />
+                  </inputColumns>
+                  <externalMetadataColumns isUsed="True">
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[TransactionId]" dataType="i8" name="TransactionId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[AccountId]" dataType="i8" name="AccountId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[CustomerId]" dataType="i8" name="CustomerId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[BusinessDate]" dataType="dbDate" name="BusinessDate" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[Amount]" dataType="numeric" precision="19" scale="2" name="Amount" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[CurrencyCode]" dataType="wstr" length="3" name="CurrencyCode" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[OriginCountryCode]" dataType="wstr" length="2" name="OriginCountryCode" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[TransactionType]" dataType="wstr" length="20" name="TransactionType" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[CustomerRiskScore]" dataType="i4" name="CustomerRiskScore" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[RequiresManualReview]" dataType="bool" name="RequiresManualReview" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[ExceptionReason]" dataType="wstr" length="50" name="ExceptionReason" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[BatchId]" dataType="i8" name="BatchId" />
+                    <externalMetadataColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input].ExternalColumns[LoadUtc]" dataType="dbTimeStamp" name="LoadUtc" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Outputs[OLE DB Destination Error Output]" isErrorOut="true" name="OLE DB Destination Error Output" synchronousInputId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input]">
+                  <outputColumns>
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]" dataType="i4" specialFlags="1" lineageId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]" name="ErrorCode" />
+                    <outputColumn refId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]" dataType="i4" specialFlags="2" lineageId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]" name="ErrorColumn" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+          </components>
+          <paths>
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[OLE DB Source Output]" endId="Package\DFT Enrich and Classify Transactions\RC Rows Extracted.Inputs[Row Count Input 1]" name="OLE DB Source Output" startId="Package\DFT Enrich and Classify Transactions\OLE SRC Daily Transactions.Outputs[OLE DB Source Output]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Row Count Output 1]" endId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Inputs[Lookup Input]" name="Row Count Output 1" startId="Package\DFT Enrich and Classify Transactions\RC Rows Extracted.Outputs[Row Count Output 1]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Lookup Match Output]" endId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Inputs[Derived Column Input]" name="Lookup Match Output" startId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup Match Output]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Derived Column Output]" endId="Package\DFT Enrich and Classify Transactions\RC Rows Classified.Inputs[Row Count Input 1]" name="Derived Column Output" startId="Package\DFT Enrich and Classify Transactions\DER Calculate Risk Score.Outputs[Derived Column Output]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Row Count Output 1 1]" endId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Inputs[Conditional Split Input]" name="Row Count Output 1 1" startId="Package\DFT Enrich and Classify Transactions\RC Rows Classified.Outputs[Row Count Output 1]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[High Risk]" endId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Inputs[Derived Column Input]" name="High Risk" startId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Outputs[High Risk]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Derived Column Output 1]" endId="Package\DFT Enrich and Classify Transactions\MC HIGH.Inputs[Multicast Input 1]" name="Derived Column Output 1" startId="Package\DFT Enrich and Classify Transactions\DER Label HIGH.Outputs[Derived Column Output]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Multicast Output 1]" endId="Package\DFT Enrich and Classify Transactions\OLE DST HIGH.Inputs[OLE DB Destination Input]" name="Multicast Output 1" startId="Package\DFT Enrich and Classify Transactions\MC HIGH.Outputs[Multicast Output 1]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Manual Review]" endId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Inputs[Derived Column Input]" name="Manual Review" startId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Outputs[Manual Review]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Derived Column Output 2]" endId="Package\DFT Enrich and Classify Transactions\MC MANUAL_REVIEW.Inputs[Multicast Input 1]" name="Derived Column Output 2" startId="Package\DFT Enrich and Classify Transactions\DER Label MANUAL_REVIEW.Outputs[Derived Column Output]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Multicast Output 1 1]" endId="Package\DFT Enrich and Classify Transactions\OLE DST MANUAL_REVIEW.Inputs[OLE DB Destination Input]" name="Multicast Output 1 1" startId="Package\DFT Enrich and Classify Transactions\MC MANUAL_REVIEW.Outputs[Multicast Output 1]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Standard]" endId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Inputs[Derived Column Input]" name="Standard" startId="Package\DFT Enrich and Classify Transactions\CSPL Transaction Risk.Outputs[Standard]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Derived Column Output 3]" endId="Package\DFT Enrich and Classify Transactions\MC STANDARD.Inputs[Multicast Input 1]" name="Derived Column Output 3" startId="Package\DFT Enrich and Classify Transactions\DER Label STANDARD.Outputs[Derived Column Output]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Multicast Output 1 2]" endId="Package\DFT Enrich and Classify Transactions\OLE DST STANDARD.Inputs[OLE DB Destination Input]" name="Multicast Output 1 2" startId="Package\DFT Enrich and Classify Transactions\MC STANDARD.Outputs[Multicast Output 1]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Multicast Output 2]" endId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 1]" name="Multicast Output 2" startId="Package\DFT Enrich and Classify Transactions\MC HIGH.Outputs[Multicast Output 2]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Multicast Output 2 1]" endId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 2]" name="Multicast Output 2 1" startId="Package\DFT Enrich and Classify Transactions\MC MANUAL_REVIEW.Outputs[Multicast Output 2]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Multicast Output 2 2]" endId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Inputs[Union All Input 3]" name="Multicast Output 2 2" startId="Package\DFT Enrich and Classify Transactions\MC STANDARD.Outputs[Multicast Output 2]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Union All Output 1]" endId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Inputs[Aggregate Input 1]" name="Union All Output 1" startId="Package\DFT Enrich and Classify Transactions\UALL Classified For Summary.Outputs[Union All Output 1]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Aggregate Output 1]" endId="Package\DFT Enrich and Classify Transactions\OLE DST Customer Risk Stage.Inputs[OLE DB Destination Input]" name="Aggregate Output 1" startId="Package\DFT Enrich and Classify Transactions\AGG Customer Daily Risk.Outputs[Aggregate Output 1]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Lookup No Match Output]" endId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Inputs[Derived Column Input]" name="Lookup No Match Output" startId="Package\DFT Enrich and Classify Transactions\LKP Country Risk.Outputs[Lookup No Match Output]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Derived Column Output 4]" endId="Package\DFT Enrich and Classify Transactions\RC Rows Rejected.Inputs[Row Count Input 1]" name="Derived Column Output 4" startId="Package\DFT Enrich and Classify Transactions\DER Missing Country Risk.Outputs[Derived Column Output]" />
+            <path refId="Package\DFT Enrich and Classify Transactions.Paths[Row Count Output 1 2]" endId="Package\DFT Enrich and Classify Transactions\OLE DST Risk Exceptions.Inputs[OLE DB Destination Input]" name="Row Count Output 1 2" startId="Package\DFT Enrich and Classify Transactions\RC Rows Rejected.Outputs[Row Count Output 1]" />
+          </paths>
+        </pipeline>
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable DTS:refId="Package\SQL Merge Daily Risk Summary" DTS:CreationName="Microsoft.ExecuteSQLTask" DTS:Description="Merge customer-level daily classifications into the reporting output" DTS:DTSID="{E56D203E-C823-5C14-BD66-48091CD13BE4}" DTS:ExecutableType="Microsoft.ExecuteSQLTask" DTS:LocaleID="-1" DTS:ObjectName="SQL Merge Daily Risk Summary" DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2019; © 2019 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1" DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData SQLTask:Connection="{BDF8F4C7-D051-573A-A03A-ADB431FC8C5A}" SQLTask:SqlStatementSource="EXEC ssisout.usp_MergeDailyCustomerRiskSummary @BusinessDate = ?, @BatchId = ?;">
+          <SQLTask:ParameterBinding SQLTask:ParameterName="0" SQLTask:DtsVariableName="$Package::BusinessDate" SQLTask:ParameterDirection="Input" SQLTask:DataType="7" SQLTask:ParameterSize="-1" />
+          <SQLTask:ParameterBinding SQLTask:ParameterName="1" SQLTask:DtsVariableName="User::BatchId" SQLTask:ParameterDirection="Input" SQLTask:DataType="20" SQLTask:ParameterSize="-1" />
+        </SQLTask:SqlTaskData>
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable DTS:refId="Package\SQL Validate Control Totals" DTS:CreationName="Microsoft.ExecuteSQLTask" DTS:Description="Fail when source, classified, and exception totals do not reconcile" DTS:DTSID="{9BC73EE3-D0C2-5760-8C52-3B6C51B3D243}" DTS:ExecutableType="Microsoft.ExecuteSQLTask" DTS:LocaleID="-1" DTS:ObjectName="SQL Validate Control Totals" DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2019; © 2019 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1" DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData SQLTask:Connection="{BDF8F4C7-D051-573A-A03A-ADB431FC8C5A}" SQLTask:SqlStatementSource="EXEC audit.usp_ValidatePackageControlTotals @BusinessDate = ?, @RowsExtracted = ?, @RowsLoaded = ?, @RowsRejected = ?;">
+          <SQLTask:ParameterBinding SQLTask:ParameterName="0" SQLTask:DtsVariableName="$Package::BusinessDate" SQLTask:ParameterDirection="Input" SQLTask:DataType="7" SQLTask:ParameterSize="-1" />
+          <SQLTask:ParameterBinding SQLTask:ParameterName="1" SQLTask:DtsVariableName="User::RowsExtracted" SQLTask:ParameterDirection="Input" SQLTask:DataType="3" SQLTask:ParameterSize="-1" />
+          <SQLTask:ParameterBinding SQLTask:ParameterName="2" SQLTask:DtsVariableName="User::RowsLoaded" SQLTask:ParameterDirection="Input" SQLTask:DataType="3" SQLTask:ParameterSize="-1" />
+          <SQLTask:ParameterBinding SQLTask:ParameterName="3" SQLTask:DtsVariableName="User::RowsRejected" SQLTask:ParameterDirection="Input" SQLTask:DataType="3" SQLTask:ParameterSize="-1" />
+        </SQLTask:SqlTaskData>
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable DTS:refId="Package\SQL Complete Batch" DTS:CreationName="Microsoft.ExecuteSQLTask" DTS:Description="Close the successful package audit record" DTS:DTSID="{AB888685-5A88-5BB3-BF80-8D6FFBC08EF8}" DTS:ExecutableType="Microsoft.ExecuteSQLTask" DTS:LocaleID="-1" DTS:ObjectName="SQL Complete Batch" DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2019; © 2019 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1" DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData SQLTask:Connection="{BDF8F4C7-D051-573A-A03A-ADB431FC8C5A}" SQLTask:SqlStatementSource="EXEC audit.usp_CompletePackageRun @BatchId = ?, @RowsExtracted = ?, @RowsLoaded = ?, @RowsRejected = ?;">
+          <SQLTask:ParameterBinding SQLTask:ParameterName="0" SQLTask:DtsVariableName="User::BatchId" SQLTask:ParameterDirection="Input" SQLTask:DataType="20" SQLTask:ParameterSize="-1" />
+          <SQLTask:ParameterBinding SQLTask:ParameterName="1" SQLTask:DtsVariableName="User::RowsExtracted" SQLTask:ParameterDirection="Input" SQLTask:DataType="3" SQLTask:ParameterSize="-1" />
+          <SQLTask:ParameterBinding SQLTask:ParameterName="2" SQLTask:DtsVariableName="User::RowsLoaded" SQLTask:ParameterDirection="Input" SQLTask:DataType="3" SQLTask:ParameterSize="-1" />
+          <SQLTask:ParameterBinding SQLTask:ParameterName="3" SQLTask:DtsVariableName="User::RowsRejected" SQLTask:ParameterDirection="Input" SQLTask:DataType="3" SQLTask:ParameterSize="-1" />
+        </SQLTask:SqlTaskData>
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint DTS:refId="Package.PrecedenceConstraints[Constraint]" DTS:CreationName="" DTS:DTSID="{C1FFDB54-151B-5BD1-8723-02075CB9F791}" DTS:From="Package\SQL Start Batch" DTS:LogicalAnd="True" DTS:ObjectName="Constraint" DTS:To="Package\SQL Clear Business Date" />
+    <DTS:PrecedenceConstraint DTS:refId="Package.PrecedenceConstraints[Constraint 1]" DTS:CreationName="" DTS:DTSID="{42561312-8D34-5C4C-B610-380D863AE53E}" DTS:From="Package\SQL Clear Business Date" DTS:LogicalAnd="True" DTS:ObjectName="Constraint 1" DTS:To="Package\DFT Enrich and Classify Transactions" />
+    <DTS:PrecedenceConstraint DTS:refId="Package.PrecedenceConstraints[Constraint 2]" DTS:CreationName="" DTS:DTSID="{25FE59BD-8086-5BD8-9FE6-C8E04709A992}" DTS:From="Package\DFT Enrich and Classify Transactions" DTS:LogicalAnd="True" DTS:ObjectName="Constraint 2" DTS:To="Package\SQL Merge Daily Risk Summary" />
+    <DTS:PrecedenceConstraint DTS:refId="Package.PrecedenceConstraints[Constraint 3]" DTS:CreationName="" DTS:DTSID="{3BFBDB16-8D17-5DDF-BC24-06CE52761956}" DTS:From="Package\SQL Merge Daily Risk Summary" DTS:LogicalAnd="True" DTS:ObjectName="Constraint 3" DTS:To="Package\SQL Validate Control Totals" />
+    <DTS:PrecedenceConstraint DTS:refId="Package.PrecedenceConstraints[Constraint 4]" DTS:CreationName="" DTS:DTSID="{02A32B56-B3DE-5E62-972E-CB21824A85B8}" DTS:From="Package\SQL Validate Control Totals" DTS:LogicalAnd="True" DTS:ObjectName="Constraint 4" DTS:To="Package\SQL Complete Batch" />
+  </DTS:PrecedenceConstraints>
+</DTS:Executable>

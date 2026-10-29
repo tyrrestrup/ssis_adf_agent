@@ -1,0 +1,14 @@
+[
+  {
+    "route": "review_required",
+    "task": "DFT Enrich and Classify Transactions / LKP Country Risk",
+    "risk": "Lookup no-match behavior and output routing must be preserved.",
+    "acceptance": "TransactionId 1006 is written to the exception output and is absent from classified and summary outputs."
+  },
+  {
+    "route": "review_required",
+    "task": "DFT Enrich and Classify Transactions / CSPL Transaction Risk",
+    "risk": "Conditional Split order is significant: HIGH is evaluated before MANUAL_REVIEW.",
+    "acceptance": "Transactions 1002, 1004, and 1005 are HIGH even when another review condition also applies."
+  }
+]

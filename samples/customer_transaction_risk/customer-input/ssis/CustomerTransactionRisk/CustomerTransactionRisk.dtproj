@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Development</Configuration>
+    <Name>CustomerTransactionRisk</Name>
+    <ProjectGuid>{253910F5-9798-5853-9BB2-D04B0708E8A5}</ProjectGuid>
+    <DeploymentModel>Project</DeploymentModel>
+    <TargetServerVersion>SQLServer2022</TargetServerVersion>
+    <ProtectionLevel>DontSaveSensitive</ProtectionLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <DtsPackage Include="CRM_DailyTransaction_Risk.dtsx">
+      <Name>CRM_DailyTransaction_Risk.dtsx</Name>
+    </DtsPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectParameter Include="Project.params">
+      <Name>Project.params</Name>
+    </ProjectParameter>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.IntegrationServices.targets" />
+</Project>

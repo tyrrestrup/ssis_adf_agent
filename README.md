@@ -16,6 +16,10 @@ validation, testing, and SSIS-to-ADF reconciliation—not by AI confidence.
 >
 > **Test corpus:** [`samples/fsi/`](samples/fsi/README.md) contains 10 synthetic financial-services SSIS
 > packages (AML, sanctions, ACH, GL, risk, treasury) plus a validator that probes this engine.
+>
+> **Runnable customer demo:** [`samples/customer_transaction_risk/`](samples/customer_transaction_risk/README.md)
+> is a self-contained SQL Server 2022 customer handoff with an SSDT-shaped SSIS project,
+> database setup, fixed baseline, and reconciliation queries.
 
 ## Start here (customers)
 

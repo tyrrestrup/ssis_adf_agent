@@ -1057,10 +1057,22 @@ class ConnectionManager:
 class Package(Container):
     """Root ``DTS:Executable`` for a .dtsx file."""
 
-    def __init__(self, name: str, description: str, *, protection_level: int = 0):
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        *,
+        protection_level: int = 0,
+        product_version: str = PRODUCT_VERSION,
+        creator_computer: str = CREATOR_COMPUTER,
+        creator_name: str = CREATOR_NAME,
+    ):
         super().__init__(self, "Package", name, "Microsoft.Package", description)  # type: ignore[arg-type]
         self.pkg = self
         self.protection_level = protection_level
+        self.product_version = product_version
+        self.creator_computer = creator_computer
+        self.creator_name = creator_name
         self.connection_managers: list[ConnectionManager] = []
         self.parameters: list[ET.Element] = []
         self.event_handlers: list[EventHandler] = []
@@ -1186,12 +1198,12 @@ class Package(Container):
             d("refId"): "Package",
             d("CreationDate"): CREATION_DATE,
             d("CreationName"): "Microsoft.Package",
-            d("CreatorComputerName"): CREATOR_COMPUTER,
-            d("CreatorName"): CREATOR_NAME,
+            d("CreatorComputerName"): self.creator_computer,
+            d("CreatorName"): self.creator_name,
             d("Description"): self.description,
             d("DTSID"): guid(self.name, "Package"),
             d("ExecutableType"): "Microsoft.Package",
-            d("LastModifiedProductVersion"): PRODUCT_VERSION,
+            d("LastModifiedProductVersion"): self.product_version,
             d("LocaleID"): "1033",
             d("ObjectName"): self.name,
             d("PackageType"): "5",

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<SSIS:Parameters xmlns:SSIS="www.microsoft.com/SqlServer/SSIS">
+  <SSIS:Parameter SSIS:Name="Environment">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{1DFC52D9-591F-512E-B294-0CF49A2C6DC5}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description">LOCAL | DEV | TEST | PROD</SSIS:Property>
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Value">LOCAL</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+  <SSIS:Parameter SSIS:Name="DemoDbConnStr">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{2826553B-8461-5EB4-B7E3-D7259B9FEEEC}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description">SQL Server database used by the reusable transaction-risk demo</SSIS:Property>
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Value">Data Source=localhost;Initial Catalog=SsisAdfCustomerDemo;Provider=MSOLEDBSQL.1;Integrated Security=SSPI;TrustServerCertificate=True;Application Name=SSIS-CustomerTransactionRisk;</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+</SSIS:Parameters>

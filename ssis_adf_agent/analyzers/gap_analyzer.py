@@ -13,18 +13,17 @@ from ..parsers.models import (  # type: ignore[attr-defined]
     CrossDbReferenceType,
     DataFlowTask,
     ExecuteProcessTask,
-    ExecuteSQLTask,
     FileSystemTask,
-    ForEachLoopContainer,
     ForEachEnumeratorType,
+    ForEachLoopContainer,
     ForLoopContainer,
     GapItem,
+    ProtectionLevel,
     ScriptTask,
     SequenceContainer,
     SSISPackage,
     SSISTask,
     TaskType,
-    ProtectionLevel,
 )
 
 # Data flow component types that ADF Mapping Data Flow cannot represent directly

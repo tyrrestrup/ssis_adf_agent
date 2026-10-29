@@ -18,7 +18,7 @@ spending AI reasoning. Use AI only for the generated review queue.
 1. Run `ssis-adf migrate --source "<source>" --workspace "<workspace>"`.
 2. Read `<workspace>/migration_report.md`.
 3. Read `<workspace>/02_assessment/ai_review_queue.json`.
-4. Summarize the migration waves and open findings, grouped as:
+4. Summarize package dependencies and open findings, grouped as:
    - deterministic conversion complete,
    - review required,
    - AI refactor required,

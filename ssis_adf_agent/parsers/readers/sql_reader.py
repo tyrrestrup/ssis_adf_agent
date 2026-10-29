@@ -11,8 +11,8 @@ import base64
 import zlib
 from dataclasses import dataclass
 
+from ..models import SqlAgentSchedule, SSISPackage
 from ..ssis_parser import SSISParser
-from ..models import SSISPackage, SqlAgentSchedule
 
 try:
     import pyodbc
@@ -126,7 +126,7 @@ class SqlServerReader:
                 parts.append(f"PWD={password}")
         return ";".join(parts)
 
-    def _connect(self) -> "pyodbc.Connection":
+    def _connect(self) -> pyodbc.Connection:
         return pyodbc.connect(self._conn_str, timeout=30)
 
     # ------------------------------------------------------------------

@@ -16,7 +16,7 @@ Never mark a gap as resolved without showing the change and getting the user's c
 ## Steps
 
 1. Run `ssis-adf review --workspace "<workspace>"` and find the requested item.
-2. Read its original `.dtsx`, analysis JSON, and generated ADF artifacts. Check them against the **pipeline review checklist** in `docs/CUSTOMER_FLOW.md`:
+2. Read its original `.dtsx`, analysis JSON, and generated ADF artifacts. Check them against the **build checklist** in `docs/OPERATOR_GUIDE.md`:
    - `dependsOn` matches the SSIS precedence constraints, including Failure, Completion, expression and OR paths. Read the `DTS:PrecedenceConstraint` elements in the .dtsx when you need to.
    - Every referenced data flow, dataset and linked service exists in the artifacts directory.
    - Variable types match the SSIS variable types.

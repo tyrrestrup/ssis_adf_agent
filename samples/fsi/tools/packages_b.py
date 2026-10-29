@@ -615,7 +615,7 @@ def eod_master() -> tuple[Package, dict]:
         "domain": "Orchestration",
         "scenario": "End-of-day master orchestration across finance, payments, risk and compliance",
         "regulatory_context": "Timely regulatory reporting SLAs; BCBS 239 timeliness and completeness",
-        "schedule": "SQL Agent job, weeknights 21:00 ET (Sprint 2 adds the job definition)",
+        "schedule": "SQL Agent job, weeknights 21:00 ET (job definition not included)",
         "features": ["For Loop polling with WAITFOR", "Execute Package Task (project reference) x9",
                      "Parameter assignments to child packages", "Parallel tasks inside Sequence containers",
                      "Expression constraints for success/timeout branches", "Completion constraints",

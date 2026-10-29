@@ -7,7 +7,6 @@ Mapping Data Flow JSON.
 """
 from __future__ import annotations
 
-import re
 from typing import Any
 
 from ...parsers.models import DataFlowComponent
@@ -71,7 +70,6 @@ def _derived_column(component: DataFlowComponent) -> dict[str, Any]:
 
 def _lookup(component: DataFlowComponent) -> dict[str, Any]:
     t = _base(component, "Lookup")
-    ref_conn = component.connection_id or "unknown"
     t["typeProperties"] = {
         "lookupTable": {
             "referenceName": f"DS_{component.name.replace(' ', '_')}_lookup",

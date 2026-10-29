@@ -10,6 +10,7 @@ import re
 import uuid
 from pathlib import Path
 from typing import Any
+
 from lxml import etree
 
 from .models import (
@@ -26,11 +27,10 @@ from .models import (
     ExecuteProcessTask,
     ExecuteSQLTask,
     FileSystemTask,
-    ForEachLoopContainer,
     ForEachEnumeratorType,
+    ForEachLoopContainer,
     ForLoopContainer,
     FTPTask,
-    GapItem,
     IngestionPattern,
     PrecedenceConstraint,
     PrecedenceEvalOp,
@@ -329,8 +329,8 @@ def _extract_source_from_blob(b64_text: str, language: str) -> str | None:
     """
     import base64
     import io
-    import zipfile
     import logging
+    import zipfile
 
     ext = ".vb" if language == "VisualBasic" else ".cs"
     _EXCLUDE = {"assemblyinfo", ".designer.", "assemblyattributes"}
@@ -358,7 +358,7 @@ def _extract_source_from_blob(b64_text: str, language: str) -> str | None:
 
 
 def _extract_source_from_script_project(
-    config_elem: "etree._Element", language: str
+    config_elem: etree._Element, language: str
 ) -> str | None:
     """
     Pattern A (SSIS 2012+): look for a ScriptProject child inside the config element,
@@ -520,7 +520,6 @@ class SSISParser:
             object_data = cm_elem.find(_dts("ObjectData"))
             if object_data is not None:
                 for child in object_data:
-                    local = etree.QName(child.tag).localname
                     # OLE DB / ADO.NET: ConnectionString attribute
                     cs = child.get("ConnectionString") or child.get(f"{{{DTS_NS}}}ConnectionString")
                     if cs:

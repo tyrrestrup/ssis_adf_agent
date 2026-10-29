@@ -19,7 +19,6 @@ from typing import Any
 
 from ..parsers.models import ConnectionManagerType, SSISConnectionManager, SSISPackage
 
-
 _DEFAULT_IR = "AutoResolveIntegrationRuntime"
 _AZURE_SQL_SUFFIX = ".database.windows.net"
 

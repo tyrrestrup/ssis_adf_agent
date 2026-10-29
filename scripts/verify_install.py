@@ -51,7 +51,7 @@ def main() -> int:
 
     print(
         "\nAll checks passed. Run `ssis-adf migrate --help`, then follow "
-        "docs/CUSTOMER_FLOW.md."
+        "docs/OPERATOR_GUIDE.md."
     )
     return 0
 

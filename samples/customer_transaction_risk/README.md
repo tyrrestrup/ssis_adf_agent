@@ -272,7 +272,7 @@ That creates a `RECON-*` item and routes the package back to Copilot review.
 ## Known limitations
 
 - The project files are generated to match SSDT-style SQL Server 2022 project structure, but this
-  environment cannot open Visual Studio to prove designer compatibility.
+  repository does not include evidence that every generated file opens in the SSDT designer.
 - A real SSIS runtime is required to prove package execution.
 - The current converter may generate incomplete Mapping Data Flow details; the review queue and
   reconciliation are intentionally used to identify those gaps.

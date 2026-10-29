@@ -26,17 +26,14 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ..analyzers.dependency_graph import topological_sort
+from ..converters.dispatcher import ConverterDispatcher
 from ..parsers.models import (
     DataFlowTask,
     ExecuteSQLTask,
     IngestionPattern,
     SSISPackage,
-    SSISParameter,
-    SSISVariable,
-    TaskType,
 )
-from ..analyzers.dependency_graph import topological_sort
-from ..converters.dispatcher import ConverterDispatcher
 
 _SSIS_TO_ADF_TYPE: dict[str, str] = {
     "String": "String",

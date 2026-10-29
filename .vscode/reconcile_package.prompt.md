@@ -15,7 +15,8 @@ description: Generate reconciliation queries and a sign-off template that prove 
 
 ## Steps
 
-1. Call `analyze_ssis_package`. From the data flows and Execute SQL tasks, list every **target**:
+1. Read the original `.dtsx` and `<workspace>/02_assessment/<package-key>.analysis.json`.
+   From the data flows and Execute SQL tasks, list every **target**:
    - tables written to by destinations, `INSERT`/`MERGE`/`UPDATE` statements,
    - reject and side tables,
    - files written by flat-file destinations.

@@ -16,10 +16,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ..parsers.models import DataFlowTask, SSISPackage, TaskType
-from ..converters.data_flow.source_converter import convert_source
 from ..converters.data_flow.destination_converter import convert_destination
+from ..converters.data_flow.source_converter import convert_source
 from ..converters.data_flow.transformation_converter import convert_transformation
+from ..parsers.models import DataFlowTask, SSISPackage, TaskType
 
 _SOURCE_TYPES = frozenset({
     "OleDbSource", "FlatFileSource", "ExcelSource", "OdbcSource",
@@ -121,10 +121,10 @@ def _build_dsl_script(
     lines: list[str] = []
 
     for s in sources:
-        lines.append(f"source(output(/* TODO: declare output schema */),")
-        lines.append(f'    allowSchemaDrift: true,')
-        lines.append(f'    validateSchema: false,')
-        lines.append(f"    isolationLevel: 'READ_UNCOMMITTED',")
+        lines.append("source(output(/* TODO: declare output schema */),")
+        lines.append('    allowSchemaDrift: true,')
+        lines.append('    validateSchema: false,')
+        lines.append("    isolationLevel: 'READ_UNCOMMITTED',")
         lines.append(f"    errorHandlingOption: 'stopOnFirstError') ~> {s['name']}")
 
     for t in transformations:
@@ -138,19 +138,19 @@ def _build_dsl_script(
         )
         has_keys = bool(key_columns)
         lines.append(f'{prev} sink(allowSchemaDrift: true,')
-        lines.append(f'    validateSchema: false,')
-        lines.append(f'    errorHandlingOption: \'stopOnFirstError\',')
+        lines.append('    validateSchema: false,')
+        lines.append('    errorHandlingOption: \'stopOnFirstError\',')
         if has_keys:
             keys_str = ", ".join(f"'{k}'" for k in key_columns)
             lines.append(f'    keys: [{keys_str}],')
-            lines.append(f'    deletable: false,')
-            lines.append(f'    insertable: true,')
-            lines.append(f'    updateable: true,')
+            lines.append('    deletable: false,')
+            lines.append('    insertable: true,')
+            lines.append('    updateable: true,')
             lines.append(f'    upsertable: true) ~> {sk["name"]}')
         else:
-            lines.append(f'    deletable: false,')
-            lines.append(f'    insertable: true,')
-            lines.append(f'    updateable: false,')
+            lines.append('    deletable: false,')
+            lines.append('    insertable: true,')
+            lines.append('    updateable: false,')
             lines.append(f'    upsertable: true) ~> {sk["name"]}')
 
     return "\n".join(lines)

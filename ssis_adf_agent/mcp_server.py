@@ -311,10 +311,11 @@ async def _scan(args: dict[str, Any]) -> list[types.TextContent]:
             })
 
     elif source_type == "sql":
-        from .parsers.readers.sql_reader import SqlServerReader
         # Expect path_or_conn to be a pyodbc-style connection string
         # Parse it first to get server/database
         import re
+
+        from .parsers.readers.sql_reader import SqlServerReader
         server_m = re.search(r"SERVER=([^;]+)", path_or_conn, re.I)
         db_m = re.search(r"DATABASE=([^;]+)", path_or_conn, re.I)
         server = server_m.group(1) if server_m else "localhost"
@@ -332,12 +333,12 @@ async def _scan(args: dict[str, Any]) -> list[types.TextContent]:
 
 
 async def _analyze(args: dict[str, Any]) -> list[types.TextContent]:
-    from .parsers.readers.local_reader import LocalReader
-    from .analyzers.complexity_scorer import score_package
-    from .analyzers.gap_analyzer import analyze_gaps
-    from .analyzers.dependency_graph import build_package_dependency_order
     from .analyzers.cdm_pattern_detector import detect_cdm_patterns
+    from .analyzers.complexity_scorer import score_package
+    from .analyzers.dependency_graph import build_package_dependency_order
     from .analyzers.esi_reuse_analyzer import analyze_esi_reuse, load_esi_config
+    from .analyzers.gap_analyzer import analyze_gaps
+    from .parsers.readers.local_reader import LocalReader
 
     path = Path(args["package_path"])
     reader = LocalReader()
@@ -388,14 +389,14 @@ async def _analyze(args: dict[str, Any]) -> list[types.TextContent]:
 
 
 async def _convert(args: dict[str, Any]) -> list[types.TextContent]:
-    from .parsers.readers.local_reader import LocalReader
-    from .generators.pipeline_generator import generate_pipeline
-    from .generators.linked_service_generator import generate_linked_services
-    from .generators.dataset_generator import generate_datasets
-    from .generators.dataflow_generator import generate_data_flows
-    from .generators.trigger_generator import generate_triggers
     from .analyzers.cdm_pattern_detector import detect_cdm_patterns
     from .analyzers.esi_reuse_analyzer import analyze_esi_reuse, load_esi_config
+    from .generators.dataflow_generator import generate_data_flows
+    from .generators.dataset_generator import generate_datasets
+    from .generators.linked_service_generator import generate_linked_services
+    from .generators.pipeline_generator import generate_pipeline
+    from .generators.trigger_generator import generate_triggers
+    from .parsers.readers.local_reader import LocalReader
 
     path = Path(args["package_path"])
     output_dir = Path(args["output_dir"])

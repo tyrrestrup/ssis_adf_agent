@@ -1,0 +1,36 @@
+{
+  "business_date": "2026-01-14",
+  "input_transaction_count": 8,
+  "classified_transaction_count": 7,
+  "exception_transaction_count": 1,
+  "high_risk_count": 3,
+  "manual_review_count": 2,
+  "standard_count": 2,
+  "input_amount": "51250.00",
+  "classified_amount": "50050.00",
+  "exception_amount": "1200.00",
+  "high_risk_amount": "42000.00",
+  "manual_review_amount": "4800.00",
+  "standard_amount": "3250.00",
+  "customer_summary_count": 4,
+  "high_risk_transaction_ids": [
+    1002,
+    1004,
+    1005
+  ],
+  "manual_review_transaction_ids": [
+    1003,
+    1007
+  ],
+  "standard_transaction_ids": [
+    1001,
+    1008
+  ],
+  "exception_transaction_ids": [
+    1006
+  ],
+  "invariants": [
+    "input_transaction_count = classified_transaction_count + exception_transaction_count",
+    "input_amount = classified_amount + exception_amount"
+  ]
+}

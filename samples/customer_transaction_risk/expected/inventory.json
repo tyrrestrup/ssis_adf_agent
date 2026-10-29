@@ -1,0 +1,36 @@
+{
+  "package": "CRM_DailyTransaction_Risk",
+  "target_server_version": "SQLServer2022",
+  "package_format_version": 8,
+  "connection_managers": 1,
+  "package_parameters": [
+    "BusinessDate"
+  ],
+  "user_variables": [
+    "BatchId",
+    "RowsExtracted",
+    "RowsLoaded",
+    "RowsRejected"
+  ],
+  "tasks": {
+    "Microsoft.ExecuteSQLTask": 5,
+    "Microsoft.Pipeline": 1
+  },
+  "data_flow_components": {
+    "Microsoft.Aggregate": 1,
+    "Microsoft.ConditionalSplit": 1,
+    "Microsoft.DerivedColumn": 5,
+    "Microsoft.Lookup": 1,
+    "Microsoft.Multicast": 3,
+    "Microsoft.OLEDBDestination": 5,
+    "Microsoft.OLEDBSource": 1,
+    "Microsoft.RowCount": 3,
+    "Microsoft.UnionAll": 1
+  },
+  "precedence_constraints": 5,
+  "event_handlers": [],
+  "semantic_risk": {
+    "component": "LKP Country Risk",
+    "requirement": "Lookup no-match rows must be written to ssisout.TransactionRiskException."
+  }
+}

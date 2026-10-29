@@ -9,7 +9,7 @@ Mapping:
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ...parsers.models import (
     ForEachEnumeratorType,
@@ -19,9 +19,12 @@ from ...parsers.models import (
 )
 from ..base_converter import BaseConverter
 
+if TYPE_CHECKING:
+    from ..dispatcher import ConverterDispatcher
+
 
 class ForEachConverter(BaseConverter):
-    def __init__(self, child_converter: "ConverterDispatcher | None" = None) -> None:  # type: ignore[name-defined]
+    def __init__(self, child_converter: ConverterDispatcher | None = None) -> None:
         self._child_converter = child_converter
 
     def convert(
@@ -54,7 +57,6 @@ class ForEachConverter(BaseConverter):
     def _build_items_expression(self, task: ForEachLoopContainer) -> str:
         cfg = task.enumerator_config
         if task.enumerator_type == ForEachEnumeratorType.FILE:
-            folder = cfg.get("Folder") or cfg.get("FolderPath") or "@pipeline().parameters.FolderPath"
             return (
                 f"@activity('GetMetadata_{task.name.replace(' ', '_')}').output.childItems"
             )

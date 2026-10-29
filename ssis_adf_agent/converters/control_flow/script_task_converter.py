@@ -114,7 +114,7 @@ class ScriptTaskConverter(BaseConverter):
                 warn_line
                 + orig_block
                 + "    # TODO: implement converted logic here\n"
-                + f"    raise NotImplementedError(\n"
+                + "    raise NotImplementedError(\n"
                 + f'        "Script Task \'{task.name}\' has not been implemented yet. "\n'
                 + f'        "See the original {task.script_language} code above."\n'
                 + "    )"

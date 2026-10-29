@@ -13,18 +13,17 @@ from ..parsers.models import (  # type: ignore[attr-defined]
     CrossDbReferenceType,
     DataFlowTask,
     ExecuteProcessTask,
-    ExecuteSQLTask,
     FileSystemTask,
-    ForEachLoopContainer,
     ForEachEnumeratorType,
+    ForEachLoopContainer,
     ForLoopContainer,
     GapItem,
+    ProtectionLevel,
     ScriptTask,
     SequenceContainer,
     SSISPackage,
     SSISTask,
     TaskType,
-    ProtectionLevel,
 )
 
 # Data flow component types that ADF Mapping Data Flow cannot represent directly
@@ -47,6 +46,14 @@ _REVIEW_DF_COMPONENTS: dict[str, str] = {
     "Sort": "ADF Sort transformation is memory-bound; confirm data volume is acceptable",
     "MergeJoin": "Inputs must be sorted in ADF; add Sort transformations if needed",
     "Merge": "Inputs must be sorted in ADF Merge transformation",
+    "Lookup": (
+        "Lookup no-match behavior and output routing must be preserved. Verify that unmatched "
+        "rows are not silently dropped or converted to default/null reference values."
+    ),
+    "ConditionalSplit": (
+        "Conditional Split expressions are evaluated in order. Preserve the output order, "
+        "default output, and any rows routed to exception or reject paths."
+    ),
 }
 
 
@@ -196,14 +203,15 @@ def _analyze_task(task: SSISTask) -> list[GapItem]:
     elif task.task_type == TaskType.DATA_FLOW:
         assert isinstance(task, DataFlowTask)
         for comp in task.components:
-            if comp.component_type in _UNSUPPORTED_DF_COMPONENTS:
+            component_type = comp.component_type.rsplit(".", 1)[-1]
+            if component_type in _UNSUPPORTED_DF_COMPONENTS:
                 gaps.append(GapItem(
                     task_id=comp.id,
                     task_name=f"{task.name} / {comp.name}",
-                    task_type=f"DataFlow/{comp.component_type}",
+                    task_type=f"DataFlow/{component_type}",
                     severity="manual_required",
                     message=(
-                        f"Data Flow component '{comp.component_type}' is not supported in ADF Mapping Data Flows. "
+                        f"Data Flow component '{component_type}' is not supported in ADF Mapping Data Flows. "
                         "Manual implementation required."
                     ),
                     recommendation=(
@@ -211,13 +219,13 @@ def _analyze_task(task: SSISTask) -> list[GapItem]:
                         "to implement the equivalent transformation."
                     ),
                 ))
-            elif comp.component_type in _REVIEW_DF_COMPONENTS:
+            elif component_type in _REVIEW_DF_COMPONENTS:
                 gaps.append(GapItem(
                     task_id=comp.id,
                     task_name=f"{task.name} / {comp.name}",
-                    task_type=f"DataFlow/{comp.component_type}",
+                    task_type=f"DataFlow/{component_type}",
                     severity="warning",
-                    message=_REVIEW_DF_COMPONENTS[comp.component_type],
+                    message=_REVIEW_DF_COMPONENTS[component_type],
                     recommendation="Review the generated Mapping Data Flow transformation.",
                 ))
 

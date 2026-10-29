@@ -14,7 +14,7 @@ ADF Until:
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ...parsers.models import (
     ForLoopContainer,
@@ -22,6 +22,9 @@ from ...parsers.models import (
     SSISTask,
 )
 from ..base_converter import BaseConverter
+
+if TYPE_CHECKING:
+    from ..dispatcher import ConverterDispatcher
 
 
 def _negate_ssis_expression(expr: str | None) -> str:
@@ -50,7 +53,7 @@ def _translate_ssis_expr(expr: str) -> str:
 
 
 class ForLoopConverter(BaseConverter):
-    def __init__(self, child_converter: "ConverterDispatcher | None" = None) -> None:  # type: ignore[name-defined]
+    def __init__(self, child_converter: ConverterDispatcher | None = None) -> None:
         self._child_converter = child_converter
 
     def convert(

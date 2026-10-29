@@ -9,11 +9,12 @@ Scoring model
 
 Score bands
 -----------
-0-20  → Low         (simple automation, mostly Execute SQL / File System)
-21-50 → Medium      (data flows, loops, parameters)
+0-25  → Low         (simple automation, mostly Execute SQL / File System)
+26-50 → Medium      (data flows, loops, parameters)
 51-75 → High        (Script Tasks, deep nesting, event handlers)
 76+   → Very High   (many Script Tasks, complex data flows, unsupported components)
 """
+
 from __future__ import annotations
 
 from ..parsers.models import (  # type: ignore[attr-defined]
@@ -22,7 +23,6 @@ from ..parsers.models import (  # type: ignore[attr-defined]
     DataFlowTask,
     ForEachLoopContainer,
     ForLoopContainer,
-    ScriptTask,
     SequenceContainer,
     SSISPackage,
     SSISTask,
@@ -33,7 +33,7 @@ from ..parsers.models import (  # type: ignore[attr-defined]
 _WEIGHTS: dict[TaskType, int] = {
     TaskType.EXECUTE_SQL: 2,
     TaskType.DATA_FLOW: 8,
-    TaskType.SCRIPT: 20,          # highest — manual work required
+    TaskType.SCRIPT: 20,  # highest — manual work required
     TaskType.FILE_SYSTEM: 2,
     TaskType.FTP: 3,
     TaskType.SEND_MAIL: 2,
@@ -42,7 +42,7 @@ _WEIGHTS: dict[TaskType, int] = {
     TaskType.SEQUENCE: 1,
     TaskType.FOREACH_LOOP: 5,
     TaskType.FOR_LOOP: 5,
-    TaskType.UNKNOWN: 10,         # unknown = scary
+    TaskType.UNKNOWN: 10,  # unknown = scary
 }
 
 # Extra score per Data Flow *component* (above the base DataFlowTask weight)
@@ -119,12 +119,10 @@ def score_package(package: SSISPackage) -> ComplexityScore:
     if max_depth > 1:
         raw_score += (max_depth - 1) * _NEST_DEPTH_WEIGHT
 
-    # Normalise to 0-100 using a soft-cap curve (log-ish)
-    import math
-    # Base: 200 raw points → score of 100
-    score = min(100, int(math.log1p(raw_score) / math.log1p(200) * 100))
+    # The documented weights already represent points on a 0-100 scale.
+    score = min(100, int(raw_score))
 
-    if score <= 20:
+    if score <= 25:
         effort = "Low"
     elif score <= 50:
         effort = "Medium"

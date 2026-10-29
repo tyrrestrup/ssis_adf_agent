@@ -1,0 +1,14 @@
+{
+  "name": "CustomerTransactionRisk",
+  "package": "CRM_DailyTransaction_Risk",
+  "generator": "tools/generate_demo.py",
+  "generated_files": {
+    "customer-input/ssis/CustomerTransactionRisk/CRM_DailyTransaction_Risk.dtsx": "be3a7074437b66a753fb310265a53e11b83df902e7e71e827ef59540e3125dc1",
+    "customer-input/ssis/CustomerTransactionRisk/CustomerTransactionRisk.dtproj": "b553b2803c283d6cc52f9c4fc123ea16d9e9f806ec1052819716b3b7bbc10809",
+    "customer-input/ssis/CustomerTransactionRisk/CustomerTransactionRisk.sln": "dd0ee19d04bcf5aea91ac1cd53a48435e96d5496e9d1d755455d035892ed5fa6",
+    "customer-input/ssis/CustomerTransactionRisk/Project.params": "94940c6c680432249fa9aca62b6186248147585f88eecbefcdde7d44bf5fb2b9",
+    "expected/baseline.json": "260820759316b79a18605d3fcab9bc2b4e8be0a36e7e98da2ccb95ea13dceb7e",
+    "expected/expected_review_queue.json": "0d3ba04518cdd7b72ee2b49ed7c28f8a7104b719fd9a04519d0e5f2b38dc9726",
+    "expected/inventory.json": "fdb0587baf6557547b59637f0518bea545e4c8989689ac69f1f21fe2d221cb23"
+  }
+}

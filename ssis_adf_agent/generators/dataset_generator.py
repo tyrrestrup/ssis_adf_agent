@@ -11,8 +11,6 @@ from pathlib import Path
 from typing import Any
 
 from ..parsers.models import (
-    ConnectionManagerType,
-    DataFlowComponent,
     DataFlowTask,
     SSISConnectionManager,
     SSISPackage,

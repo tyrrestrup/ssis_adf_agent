@@ -1,5 +1,9 @@
 # AI-Powered SSIS to ADF Migration Platform Plan
 
+> This is the internal engineering and product-direction document. For executive communication,
+> use the [solution walkthrough](executive/SSIS_TO_ADF_SOLUTION_WALKTHROUGH.md) and
+> [Bitwise comparison](executive/BITWISE_COMPARISON.md).
+
 ## Executive summary
 
 The goal is to evolve this repository from a package conversion utility into an

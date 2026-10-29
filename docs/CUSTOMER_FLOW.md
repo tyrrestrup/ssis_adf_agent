@@ -1,5 +1,8 @@
 # Customer flow: from SSIS packages to trusted ADF pipelines
 
+> This is the detailed operator guide. For a concise customer and executive overview, use the
+> [SSIS-to-ADF solution walkthrough](executive/SSIS_TO_ADF_SOLUTION_WALKTHROUGH.md).
+
 This guide is for the teams who will run the solution themselves: migration engineers, data owners and platform admins. It describes:
 
 - how you interact with the solution,

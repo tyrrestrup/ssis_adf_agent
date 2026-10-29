@@ -10,9 +10,15 @@ patterns into Azure Data Factory artifacts without AI, and creates a focused rev
 The Python CLI is the primary product interface. MCP is optional. Correctness is established by
 validation, testing, and SSIS-to-ADF reconciliation—not by AI confidence.
 
-> **Product direction:** See the [AI-powered SSIS migration platform plan](docs/AI_MIGRATION_PLATFORM_PLAN.md)
-> for the proposed customer experience, architecture, trust model, reconciliation approach,
-> and delivery roadmap.
+> **Executive documents:**
+> - [Solution walkthrough — Word](docs/executive/SSIS_to_ADF_Solution_Walkthrough.docx)
+>   ([Markdown](docs/executive/SSIS_TO_ADF_SOLUTION_WALKTHROUGH.md))
+> - [Bitwise comparison and positioning — Word](docs/executive/Bitwise_Comparison_and_Positioning.docx)
+>   ([Markdown](docs/executive/BITWISE_COMPARISON.md))
+>
+> **Engineering detail:** See the [customer operator flow](docs/CUSTOMER_FLOW.md) and
+> [platform plan](docs/AI_MIGRATION_PLATFORM_PLAN.md) for commands, architecture, limitations,
+> and roadmap.
 >
 > **Test corpus:** [`samples/fsi/`](samples/fsi/README.md) contains 10 synthetic financial-services SSIS
 > packages (AML, sanctions, ACH, GL, risk, treasury) plus a validator that probes this engine.
